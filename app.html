@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FactBook · 本地事实查询</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --ink: #1f2430; --sub: #6b7280;
+    --line: #e5e7eb; --brand: #2563eb; --warn: #d97706; --bad: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { margin-bottom: 16px; }
+  h1 { font-size: 22px; }
+  .meta { color: var(--sub); font-size: 13px; margin-top: 4px; }
+  .meta b { color: var(--ink); }
+  .stale { display: none; margin-top: 8px; padding: 8px 12px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; color: #92400e; font-size: 13px; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  button.act, label.act { display: inline-block; padding: 7px 14px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--ink); }
+  button.act:hover, label.act:hover { border-color: var(--brand); color: var(--brand); }
+  .tabs { display: flex; gap: 8px; margin: 16px 0 12px; border-bottom: 2px solid var(--line); }
+  .tab { padding: 8px 18px; cursor: pointer; font-size: 15px; border: none; background: none; color: var(--sub); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab.on { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+  .toolbar input { flex: 1 1 220px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--card); }
+  .chip { padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; cursor: pointer; background: var(--card); color: var(--sub); user-select: none; }
+  .chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .flabel { font-size: 12px; color: var(--sub); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .card .top { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-p0 { background: #fee2e2; color: #b91c1c; }
+  .b-p1 { background: #fef3c7; color: #92400e; }
+  .b-p2 { background: #dbeafe; color: #1d4ed8; }
+  .b-avoid { background: #f3f4f6; color: #4b5563; }
+  .b-generic { background: #f3f4f6; color: #4b5563; }
+  .b-verified { background: #d1fae5; color: #065f46; }
+  .b-partial { background: #fef3c7; color: #92400e; }
+  .b-unverified { background: #f3f4f6; color: #6b7280; }
+  .card h3 { font-size: 16px; line-height: 1.45; }
+  .issuer { font-size: 13px; color: var(--sub); }
+  .kv { font-size: 13.5px; }
+  .kv .k { color: var(--sub); display: inline-block; min-width: 52px; }
+  .deadline { padding: 7px 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; font-size: 13px; color: #b91c1c; font-weight: 600; }
+  .deadline.soft { background: #f9fafb; border-color: var(--line); color: var(--sub); font-weight: 400; }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+  .links a { font-size: 13px; color: var(--brand); text-decoration: none; border: 1px solid var(--line); padding: 3px 10px; border-radius: 6px; background: #f9fafb; word-break: break-all; }
+  .links a:hover { border-color: var(--brand); }
+  .foot { margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--sub); }
+  .avoid-box { background: #f9fafb; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: #6b7280; }
+  .todo-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 8px 10px; font-size: 13px; color: #92400e; }
+  .value { display: flex; flex-wrap: wrap; gap: 6px; }
+  .value span { font-size: 12px; background: #eff6ff; color: #1e40af; padding: 2px 8px; border-radius: 6px; }
+  .proc { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .proc h3 { font-size: 16px; margin-bottom: 10px; }
+  .proc ol { padding-left: 22px; }
+  .proc li { font-size: 14px; margin-bottom: 6px; }
+  .caution { margin-top: 10px; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #92400e; }
+  .caution b { display: block; margin-bottom: 4px; }
+  .caution ul { margin-left: 18px; }
+  .doc { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; font-size: 14px; margin-bottom: 14px; }
+  .doc h3 { font-size: 15px; margin-bottom: 8px; }
+  .doc table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+  .doc td { border: 1px solid var(--line); padding: 6px 10px; vertical-align: top; }
+  .doc td:first-child { white-space: nowrap; font-weight: 600; width: 140px; }
+  .hidden { display: none; }
+  .empty { text-align: center; color: var(--sub); padding: 40px 0; font-size: 14px; }
+  .bigimport { background: var(--card); border: 2px dashed var(--line); border-radius: 12px; padding: 40px; text-align: center; font-size: 15px; color: var(--sub); }
+  .bigimport label.act { font-size: 15px; padding: 10px 22px; margin-top: 12px; }
+  code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">FactBook · 本地事实查询</h1>
+    <div class="meta" id="metaLine"></div>
+    <div class="stale" id="staleBox"></div>
+    <div class="btnrow">
+      <label class="act" for="importFile">📥 导入 JSON 数据</label>
+      <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+      <button class="act" id="exportBtn" onclick="exportJSON()">⬇ 导出 JSON</button>
+      <button class="act" onclick="window.print()">🖨 打印</button>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <section id="tab-items">
+    <div class="toolbar" id="toolbar"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty hidden" id="empty">没有匹配的条目 —— 换个关键词或清除筛选。</div>
+    <div class="bigimport hidden" id="noData">
+      还没有数据。<br>
+      方式 A：点下面按钮，导入你现有的 JSON（FactBook 格式，见 data/blank.json）<br>
+      方式 B：复制 <code>data/blank.json</code> 开始建你自己的数据集
+      <div><label class="act" for="importFile">📥 导入 JSON</label></div>
+    </div>
+  </section>
+
+  <section id="tab-procs" class="hidden"></section>
+  <section id="tab-doc" class="hidden"></section>
+</div>
+
+<!-- 数据入口：默认加载 data/example.js（window.FACTBOOK_DATA）。
+     --inline 单文件模式会把它整段替换为内联数据。 -->
+<script src="data/example.js"></script>
+<script>
+(function () {
+  var STATUS_LABEL = { verified: "已验证", partial: "部分验证", unverified: "未验证" };
+  var KNOWN_LABELS = { issuer: "来源方", level: "级别", conditions: "条件", cost: "费用", exam: "方式", note: "说明" };
+  var RESERVED = { id:1, name:1, priority:1, status:1, ai_specific:1, value:1, official:1,
+                   local_files:1, avoid_reason:1, todo:1, deadline:1, deadline_note:1,
+                   verified_date:1, source:1, issuer:1, level:1, conditions:1, cost:1, exam:1, note:1 };
+  var state = { q: "", filters: {} };
+  var D = null, ITEMS = [];
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (ch) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]; }); }
+  function days(s) { try { return Math.floor((new Date(s) - new Date()) / 86400000); } catch (e) { return null; } }
+  function itemsOf(d) { return (d && (d.items || d.certs)) || []; }
+
+  function deadlineHtml(c) {
+    if (c.deadline) {
+      var dd = days(c.deadline);
+      if (dd === null) return '<div class="deadline soft">🗓 ' + esc(c.deadline) + '</div>';
+      if (dd < 0) return '<div class="deadline soft">⏸ 截止 ' + esc(c.deadline) + '（已过 ' + (-dd) + ' 天）</div>';
+      return '<div class="deadline">⏰ 截止 ' + esc(c.deadline) + '（剩 ' + dd + ' 天）' +
+        (c.deadline_note ? '<br><span style="font-weight:400">' + esc(c.deadline_note) + '</span>' : '') + '</div>';
+    }
+    return c.deadline_note ? '<div class="deadline soft">🗓 ' + esc(c.deadline_note) + '</div>' : '';
+  }
+
+  function prioClass(v) {
+    var k = String(v).toLowerCase();
+    return (k === "p0" || k === "p1" || k === "p2" || k === "avoid") ? "b-" + k : "b-generic";
+  }
+
+  function cardHtml(c) {
+    var h = '<div class="card"><div class="top">';
+    if (c.priority != null && c.priority !== "") h += '<span class="badge ' + prioClass(c.priority) + '">' + esc(c.priority) + '</span>';
+    if (c.status) h += '<span class="badge b-' + c.status + '">' + (STATUS_LABEL[c.status] || esc(c.status)) + '</span>';
+    h += '</div>';
+    h += '<h3>' + esc(c.name) + '</h3>';
+    if (c.issuer || c.level) h += '<div class="issuer">🏛 ' + esc(c.issuer || "") + (c.level ? ' ｜ ' + esc(c.level) : '') + '</div>';
+    h += deadlineHtml(c);
+    if (c.value && c.value.length) h += '<div class="value">' + c.value.map(function (v) { return '<span>' + esc(v) + '</span>'; }).join('') + '</div>';
+    Object.keys(KNOWN_LABELS).forEach(function (k) {
+      if (k === "issuer" || k === "level" || k === "note") return;
+      if (c[k]) h += '<div class="kv"><span class="k">' + KNOWN_LABELS[k] + '</span>' + esc(c[k]) + '</div>';
+    });
+    // 通用字段：数据里有的任意标量字段都渲染（引擎不挑数据）
+    Object.keys(c).forEach(function (k) {
+      if (RESERVED[k]) return;
+      var v = c[k];
+      if (v === null || v === undefined || v === "") return;
+      if (typeof v !== "string" && typeof v !== "number") return;
+      h += '<div class="kv"><span class="k">' + esc(k) + '</span>' + esc(v) + '</div>';
+    });
+    if (c.note) h += '<div class="kv"><span class="k">说明</span>' + esc(c.note) + '</div>';
+    if (c.avoid_reason) h += '<div class="avoid-box">🚫 ' + esc(c.avoid_reason) + '</div>';
+    if (c.todo) h += '<div class="todo-box">⚠️ 用前待核实：' + esc(c.todo) + '</div>';
+    var links = (c.official || []).map(function (o) { return '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.label) + '</a>'; }).join('');
+    if (links) h += '<div class="links">' + links + '</div>';
+    if (c.local_files) h += '<div class="kv"><span class="k">本地</span>' + esc(c.local_files.join("；")) + '</div>';
+    h += '<div class="foot">核实：' + esc(c.verified_date || "") + ' ｜ ' + esc(c.source || "") + '</div></div>';
+    return h;
+  }
+
+  function matched() {
+    return ITEMS.filter(function (c) {
+      for (var k in state.filters) {
+        var v = state.filters[k];
+        if (v === "" ) continue;
+        var cv = c[k];
+        var same = String(cv).toLowerCase() === String(v).toLowerCase();
+        if (!same) {
+          if (Array.isArray(cv) && v === "1") same = true;
+          if (!same) return false;
+        }
+      }
+      if (state.q) {
+        var hay = Object.keys(c).map(function (k) {
+          var v = c[k];
+          if (typeof v === "string" || typeof v === "number") return v;
+          if (Array.isArray(v)) return v.map(function (x) { return typeof x === "object" ? (x.label || "") + " " + (x.url || "") : x; }).join(" ");
+          return "";
+        }).join(" ").toLowerCase();
+        if (hay.indexOf(state.q) === -1) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderItems() {
+    var list = matched().slice().sort(function (a, b) {
+      var pa = a.priority == null ? 9 : 0, pb = b.priority == null ? 9 : 0;
+      return (String(a.priority).localeCompare(String(b.priority)) ) || String(a.name).localeCompare(String(b.name), "zh");
+    });
+    document.getElementById("empty").classList.toggle("hidden", ITEMS.length === 0 || list.length > 0);
+    document.getElementById("grid").innerHTML = list.map(cardHtml).join('');
+  }
+
+  function renderToolbar() {
+    var tb = document.getElementById("toolbar");
+    var html = '<input id="q" type="search" placeholder="搜索全部字段：名称 / 来源 / 备注 / 链接…">';
+    var filters = (D && D.meta && D.meta.filters) || [];
+    filters.forEach(function (f) {
+      html += '<span class="flabel">' + esc(f.label) + '</span>';
+      html += '<span class="chip on" data-k="' + esc(f.key) + '" data-v="">全部</span>';
+      (f.values || []).forEach(function (v) {
+        html += '<span class="chip" data-k="' + esc(f.key) + '" data-v="' + esc(v[0]) + '">' + esc(v[1] || v[0]) + '</span>';
+      });
+    });
+    tb.innerHTML = html;
+    document.getElementById("q").value = state.q;
+    document.getElementById("q").oninput = function (e) { state.q = e.target.value.trim().toLowerCase(); renderItems(); };
+    tb.querySelectorAll(".chip").forEach(function (ch) {
+      if (ch.dataset.k && state.filters[ch.dataset.k] === ch.dataset.v) ch.classList.add("on");
+      ch.onclick = function () {
+        var k = ch.dataset.k;
+        tb.querySelectorAll('.chip[data-k="' + k + '"]').forEach(function (x) { x.classList.remove("on"); });
+        ch.classList.add("on");
+        state.filters[k] = ch.dataset.v;
+        renderItems();
+      };
+    });
+  }
+
+  function renderProcs() {
+    var el = document.getElementById("tab-procs");
+    if (!D || !D.processes || !D.processes.length) { el.innerHTML = '<div class="empty">此数据集没有流程内容。</div>'; return; }
+    el.innerHTML = D.processes.map(function (p) {
+      return '<div class="proc"><h3>🧭 ' + esc(p.cert || p.name || "流程") + '</h3><ol>' +
+        (p.steps || []).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' +
+        (p.cautions ? '<div class="caution"><b>⚠️ 注意</b><ul>' + p.cautions.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul></div>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function renderDoc() {
+    var el = document.getElementById("tab-doc");
+    var h = '';
+    if (D && D.decision) {
+      h += '<div class="doc"><h3>📌 决策卡</h3><p style="margin-bottom:8px"><b>' + esc(D.decision.summary || "") + '</b></p><table>';
+      var dec = D.decision;
+      ["p0", "p1", "p2"].forEach(function (k) {
+        if (dec[k]) h += '<tr><td>' + k.toUpperCase() + '</td><td>' + esc(dec[k]) + '</td></tr>';
+      });
+      if (dec.not_do) h += '<tr><td>不做</td><td>' + dec.not_do.map(esc).join("；") + '</td></tr>';
+      // decision 里其他自定义字段
+      Object.keys(dec).forEach(function (k) {
+        if (["summary", "p0", "p1", "p2", "not_do"].indexOf(k) !== -1) return;
+        h += '<tr><td>' + esc(k) + '</td><td>' + esc(dec[k]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    }
+    if (D && D.meta && D.meta.legend) {
+      h += '<div class="doc"><h3>🔍 图例</h3><table>';
+      Object.keys(D.meta.legend).forEach(function (k) {
+        var v = D.meta.legend[k];
+        if (typeof v === "string") { h += '<tr><td>' + esc(k) + '</td><td>' + esc(v) + '</td></tr>'; }
+        else if (v && typeof v === "object") {
+          Object.keys(v).forEach(function (k2) { h += '<tr><td>' + esc(k + "·" + k2) + '</td><td>' + esc(v[k2]) + '</td></tr>'; });
+        }
+      });
+      h += '</table></div>';
+    }
+    h += '<div class="doc"><h3>🔄 数据维护</h3>' +
+      '<p>数据是"快照"，政策/价格/窗口会变。建议：① 每条数据带 status + 核实日期 + 来源；② 超过 90 天未核实的使用前重新联网核实（页面会自动黄条提醒）。' +
+      '③ 改数据：编辑 data/*.json → <code>python tools/sync_data.py</code> → 刷新页面；或在上方直接导入新 JSON。</p>' +
+      '<p style="margin-top:8px;color:var(--sub)">FactBook · 本地事实查询工具 · 零依赖 · 数据不出本机 · MIT</p></div>';
+    el.innerHTML = h;
+  }
+
+  function renderTabs() {
+    var tabs = [
+      { id: "items", label: "数据总表" },
+      { id: "procs", label: "流程", show: !!(D && D.processes && D.processes.length) },
+      { id: "doc", label: "说明", show: !!(D && (D.decision || (D.meta && D.meta.legend))) }
+    ];
+    var el = document.getElementById("tabs");
+    el.innerHTML = "";
+    tabs.forEach(function (t, i) {
+      if (t.show === false) return;
+      var b = document.createElement("button");
+      b.className = "tab" + (i === 0 ? " on" : "");
+      b.textContent = t.label;
+      b.onclick = function () {
+        el.querySelectorAll(".tab").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        ["items", "procs", "doc"].forEach(function (id) {
+          document.getElementById("tab-" + id).classList.toggle("hidden", id !== t.id);
+        });
+      };
+      el.appendChild(b);
+    });
+  }
+
+  function renderAll() {
+    var m = (D && D.meta) || {};
+    document.getElementById("title").textContent = (m.name ? m.name + " · " : "") + "FactBook";
+    document.getElementById("metaLine").innerHTML = "更新：<b>" + esc(m.updated || "?") + "</b>" +
+      (m.owner_note ? ' ｜ ' + esc(m.owner_note) : "");
+    var age = days(m.updated);
+    var sb = document.getElementById("staleBox");
+    if (age !== null && age > 90) {
+      sb.style.display = "block";
+      sb.textContent = "⚠️ 数据已 " + age + " 天未核实（>90 天）。政策/价格/窗口会变化，使用前请重新核实。";
+    } else sb.style.display = "none";
+    document.getElementById("noData").classList.toggle("hidden", ITEMS.length > 0);
+    document.getElementById("tabs").style.display = ITEMS.length ? "" : "none";
+    document.getElementById("toolbar").style.display = ITEMS.length ? "" : "none";
+    renderToolbar(); renderTabs(); renderItems(); renderProcs(); renderDoc();
+  }
+
+  function loadData(data) {
+    if (!data || typeof data !== "object" || (!itemsOf(data).length && !data.meta)) {
+      alert("JSON 格式不对：需要 meta 或 items/certs 数组（参考 data/blank.json）");
+      return false;
+    }
+    D = data;
+    ITEMS = itemsOf(data);
+    state = { q: "", filters: {} };
+    renderAll();
+    window.scrollTo(0, 0);
+    return true;
+  }
+
+  document.getElementById("importFile").onchange = function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try { loadData(JSON.parse(r.result)); }
+      catch (err) { alert("JSON 解析失败：" + err.message); }
+      e.target.value = "";
+    };
+    r.readAsText(f, "utf-8");
+  };
+
+  window.exportJSON = function () {
+    if (!D) { alert("当前没有数据可导出"); return; }
+    var blob = new Blob([JSON.stringify(D, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = ((D.meta && D.meta.name) || "factbook_data").replace(/[\\/:*?"<>|\s]+/g, "_") + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  var initial = window.FACTBOOK_DATA || window.CERTS_DATA;
+  if (initial) loadData(initial);
+  else renderAll();
+})();
+</script>
+</body>
+</html>
