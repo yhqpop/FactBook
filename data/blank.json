@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "name": "我的数据集（改成你的名字）",
+    "updated": "2026-01-01",
+    "owner_note": "这份数据给谁用、用来查什么（一句话）",
+    "legend": {
+      "status": {
+        "verified": "已验证（官网/官方文件直抓）",
+        "partial": "部分验证（二手来源，用前需再核实）",
+        "unverified": "未验证（仅确认存在）"
+      }
+    },
+    "filters": [
+      {
+        "key": "priority",
+        "label": "优先级",
+        "values": [["P0", "现在办"], ["P1", "先验证"], ["P2", "以后再说"], ["AVOID", "回避"]]
+      }
+    ]
+  },
+  "items": [
+    {
+      "name": "条目名称（必填）",
+      "priority": "P0",
+      "status": "verified",
+      "verified_date": "2026-01-01",
+      "source": "来源：官网 URL / 官方文件 / 二手来源说明",
+      "note": "说明（可选）",
+      "issuer": "发证方/来源方（可选）",
+      "level": "级别（可选）",
+      "conditions": "条件（可选）",
+      "cost": "费用（可选）",
+      "exam": "考试/方式（可选）",
+      "value": ["价值点1", "价值点2"],
+      "deadline": null,
+      "deadline_note": "窗口/时间备注（可选，deadline 填 YYYY-MM-DD 可启用倒计时）",
+      "todo": "使用前还必须核实什么（status=partial 时建议必填）",
+      "avoid_reason": "回避原因（priority=AVOID 时建议填）",
+      "official": [{"label": "官网", "url": "https://example.com"}],
+      "自定义字段": "FactBook 不挑字段——你查什么就装什么"
+    }
+  ],
+  "processes": [
+    {
+      "cert": "流程名称（可选整块，不需要就删掉 processes）",
+      "steps": ["步骤 1", "步骤 2", "步骤 3"],
+      "cautions": ["注意事项 1"]
+    }
+  ],
+  "decision": {
+    "summary": "一句话结论（可选整块，不需要就删掉 decision）",
+    "p0": "现在就该做的",
+    "p1": "先验证再做的",
+    "p2": "以后说的",
+    "not_do": ["不做的 1", "不做的 2"]
+  }
+}
