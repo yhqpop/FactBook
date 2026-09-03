@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+factbook_standalone.html
+dist/
+# 用户自建数据集（只留 blank 和 example）
+data/*.json
+!data/blank.json
+!data/example.json
+data/*.js
+!data/example.js
