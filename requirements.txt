@@ -1,0 +1,2 @@
+# FactBook 零三方依赖（仅 Python 标准库，Python 3.8+）
+# 本文件为占位声明，无需 pip install 任何内容。
